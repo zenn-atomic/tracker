@@ -92,7 +92,6 @@ function startTracking(){
   const lon=pos.coords.longitude;
 
   let speed=(pos.coords.speed||0)*3.6;
-
   document.getElementById('speed').textContent=speed.toFixed(1)+' KM/J';
 
   if(speed>maxSpeed){
@@ -131,6 +130,7 @@ function stopTracking(){
   const routes=JSON.parse(localStorage.getItem("routes")||"[]");
 
   routes.push({
+   name:"Rute "+(routes.length+1),
    date:new Date().toLocaleString(),
    path:path
   });
@@ -142,49 +142,70 @@ function stopTracking(){
 }
 
 function tampilkanRiwayat(){
-
  const routes=JSON.parse(localStorage.getItem("routes")||"[]");
  const list=document.getElementById("routesList");
 
  list.innerHTML="<h3>📚 Riwayat Rute</h3>";
 
  routes.forEach((r,index)=>{
-
   list.innerHTML+=`
    <div class="routeItem">
-   ${r.date}<br>
+   <b>${r.name || "Tanpa Nama"}</b><br>
+   <small>${r.date}</small><br>
+
    <button class="routeBtn" onclick="lihatRute(${index})">Lihat Rute</button>
+
+   <button class="routeBtn" style="background:#6f42c1"
+   onclick="editNama(${index})">Edit Nama</button>
+
+   <button class="routeBtn" style="background:red"
+   onclick="hapusRute(${index})">Hapus</button>
+
    </div>
   `;
-
  });
+}
 
+function editNama(index){
+ let routes = JSON.parse(localStorage.getItem("routes")||"[]");
+
+ let namaBaru = prompt("Masukkan nama rute:", routes[index].name || "");
+
+ if(namaBaru && namaBaru.trim()!==""){
+  routes[index].name = namaBaru;
+
+  localStorage.setItem("routes", JSON.stringify(routes));
+  tampilkanRiwayat();
+ }
+}
+
+function hapusRute(index){
+ let routes = JSON.parse(localStorage.getItem("routes")||"[]");
+
+ if(confirm("Hapus rute ini?")){
+  routes.splice(index,1);
+
+  localStorage.setItem("routes", JSON.stringify(routes));
+  tampilkanRiwayat();
+ }
 }
 
 function lihatRute(index){
-
  const routes=JSON.parse(localStorage.getItem("routes")||"[]");
-
  const r=routes[index];
-
  if(!r)return;
 
  currentRoute.setLatLngs(r.path);
-
  map.fitBounds(currentRoute.getBounds());
-
 }
 
 function lihatSemuaRute(){
-
  if(path.length>0){
   map.fitBounds(currentRoute.getBounds());
  }
-
 }
 
 function resetData(){
-
  totalDistance=0;
  lastPosition=null;
  path=[];
