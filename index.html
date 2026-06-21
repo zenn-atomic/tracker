@@ -22,6 +22,7 @@ button{padding:10px 14px;border:none;border-radius:10px;color:#fff;font-weight:b
 </style>
 </head>
 <body>
+
 <div class="card">
 <h1>📍 Tracker Perjalanan</h1>
 
@@ -44,6 +45,7 @@ button{padding:10px 14px;border:none;border-radius:10px;color:#fff;font-weight:b
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+
 let watchId=null,tracking=false,totalDistance=0,lastPosition=null,path=[];
 let movingSeconds=0,isMoving=false,maxSpeed=0;
 
@@ -102,7 +104,11 @@ function startTracking(){
  if(tracking)return;
  tracking=true;
 
- startTime=new Date(); // ⬅️ SIMPAN JAM MULAI
+ startTime=new Date();
+ movingSeconds=0;
+ totalDistance=0;
+ maxSpeed=0;
+ path=[];
 
  watchId=navigator.geolocation.watchPosition(pos=>{
 
@@ -121,7 +127,7 @@ function startTracking(){
 
   if(lastPosition){
    const d=haversine(lastPosition.lat,lastPosition.lon,lat,lon);
-   if(d>0.01){
+   if(d>0.001){
     totalDistance+=d;
     document.getElementById('distance').textContent=totalDistance.toFixed(2)+' KM';
    }
@@ -144,7 +150,7 @@ function stopTracking(){
  tracking=false;
  isMoving=false;
 
- endTime=new Date(); // ⬅️ SIMPAN JAM STOP
+ endTime=new Date();
 
  if(path.length>1){
   const routes=JSON.parse(localStorage.getItem("routes")||"[]");
@@ -153,7 +159,10 @@ function stopTracking(){
    name:"Rute "+(routes.length+1),
    tanggal:formatTanggal(startTime),
    jam:formatJam(startTime)+" - "+formatJam(endTime),
-   path:path
+   path:path,
+   distance:totalDistance,
+   duration:movingSeconds,
+   maxSpeed:maxSpeed
   });
 
   localStorage.setItem("routes",JSON.stringify(routes));
@@ -183,6 +192,21 @@ function tampilkanRiwayat(){
  });
 }
 
+function lihatRute(index){
+ const routes=JSON.parse(localStorage.getItem("routes")||"[]");
+ const r=routes[index];
+ if(!r)return;
+
+ currentRoute.setLatLngs(r.path);
+ map.fitBounds(currentRoute.getBounds());
+
+ // ✅ UPDATE STATISTIK ATAS
+ document.getElementById('distance').textContent=(r.distance||0).toFixed(2)+' KM';
+ document.getElementById('maxSpeed').textContent=(r.maxSpeed||0).toFixed(1)+' KM/J';
+ document.getElementById('timer').textContent=formatTime(r.duration||0);
+ document.getElementById('speed').textContent='0.0 KM/J';
+}
+
 function editNama(index){
  let routes=JSON.parse(localStorage.getItem("routes")||"[]");
  let namaBaru=prompt("Nama baru:",routes[index].name);
@@ -202,15 +226,6 @@ function hapusRute(index){
   localStorage.setItem("routes",JSON.stringify(routes));
   tampilkanRiwayat();
  }
-}
-
-function lihatRute(index){
- const routes=JSON.parse(localStorage.getItem("routes")||"[]");
- const r=routes[index];
- if(!r)return;
-
- currentRoute.setLatLngs(r.path);
- map.fitBounds(currentRoute.getBounds());
 }
 
 function lihatSemuaRute(){
