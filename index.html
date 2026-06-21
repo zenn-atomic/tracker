@@ -47,6 +47,9 @@ button{padding:10px 14px;border:none;border-radius:10px;color:#fff;font-weight:b
 let watchId=null,tracking=false,totalDistance=0,lastPosition=null,path=[];
 let movingSeconds=0,isMoving=false,maxSpeed=0;
 
+let startTime=null;
+let endTime=null;
+
 const map=L.map('map').setView([-7.39,109.36],13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap'}).addTo(map);
 
@@ -58,6 +61,19 @@ function formatTime(sec){
  const m=Math.floor((sec%3600)/60);
  const s=sec%60;
  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+
+function formatJam(date){
+ return String(date.getHours()).padStart(2,'0')+":"+
+        String(date.getMinutes()).padStart(2,'0');
+}
+
+function formatTanggal(date){
+ const hari=["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+ return hari[date.getDay()] + ", " +
+        String(date.getDate()).padStart(2,'0') + "-" +
+        String(date.getMonth()+1).padStart(2,'0') + "-" +
+        date.getFullYear();
 }
 
 setInterval(()=>{
@@ -85,6 +101,8 @@ navigator.geolocation?.getCurrentPosition(pos=>{
 function startTracking(){
  if(tracking)return;
  tracking=true;
+
+ startTime=new Date(); // ⬅️ SIMPAN JAM MULAI
 
  watchId=navigator.geolocation.watchPosition(pos=>{
 
@@ -126,12 +144,15 @@ function stopTracking(){
  tracking=false;
  isMoving=false;
 
+ endTime=new Date(); // ⬅️ SIMPAN JAM STOP
+
  if(path.length>1){
   const routes=JSON.parse(localStorage.getItem("routes")||"[]");
 
   routes.push({
    name:"Rute "+(routes.length+1),
-   date:new Date().toLocaleString(),
+   tanggal:formatTanggal(startTime),
+   jam:formatJam(startTime)+" - "+formatJam(endTime),
    path:path
   });
 
@@ -150,42 +171,35 @@ function tampilkanRiwayat(){
  routes.forEach((r,index)=>{
   list.innerHTML+=`
    <div class="routeItem">
-   <b>${r.name || "Tanpa Nama"}</b><br>
-   <small>${r.date}</small><br>
+   <b>${r.name}</b><br>
+   <small>${r.tanggal}</small><br>
+   <small>${r.jam}</small><br>
 
    <button class="routeBtn" onclick="lihatRute(${index})">Lihat Rute</button>
-
-   <button class="routeBtn" style="background:#6f42c1"
-   onclick="editNama(${index})">Edit Nama</button>
-
-   <button class="routeBtn" style="background:red"
-   onclick="hapusRute(${index})">Hapus</button>
-
+   <button class="routeBtn" style="background:#6f42c1" onclick="editNama(${index})">Edit Nama</button>
+   <button class="routeBtn" style="background:red" onclick="hapusRute(${index})">Hapus</button>
    </div>
   `;
  });
 }
 
 function editNama(index){
- let routes = JSON.parse(localStorage.getItem("routes")||"[]");
+ let routes=JSON.parse(localStorage.getItem("routes")||"[]");
+ let namaBaru=prompt("Nama baru:",routes[index].name);
 
- let namaBaru = prompt("Masukkan nama rute:", routes[index].name || "");
-
- if(namaBaru && namaBaru.trim()!==""){
-  routes[index].name = namaBaru;
-
-  localStorage.setItem("routes", JSON.stringify(routes));
+ if(namaBaru){
+  routes[index].name=namaBaru;
+  localStorage.setItem("routes",JSON.stringify(routes));
   tampilkanRiwayat();
  }
 }
 
 function hapusRute(index){
- let routes = JSON.parse(localStorage.getItem("routes")||"[]");
+ let routes=JSON.parse(localStorage.getItem("routes")||"[]");
 
- if(confirm("Hapus rute ini?")){
+ if(confirm("Hapus?")){
   routes.splice(index,1);
-
-  localStorage.setItem("routes", JSON.stringify(routes));
+  localStorage.setItem("routes",JSON.stringify(routes));
   tampilkanRiwayat();
  }
 }
